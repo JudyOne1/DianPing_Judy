@@ -52,6 +52,8 @@ public class ShopServiceImpl extends ServiceImpl<ShopMapper, Shop> implements IS
         //------------------------
         //缓存穿透:
 //        Shop shop = queryWithPassThrough(id);
+
+        //工具类cacheClient
         Shop shop = cacheClient.queryWithPassThrough(CACHE_SHOP_KEY, id, Shop.class, CACHE_SHOP_TTL, TimeUnit.MINUTES, this::getById);
         //------------------------
         //互斥锁解决缓存击穿问题:
@@ -61,6 +63,7 @@ public class ShopServiceImpl extends ServiceImpl<ShopMapper, Shop> implements IS
 //        }
 //        return Result.ok(shop);
         //-------------------------
+        //工具类cacheClient
         //逻辑过期解决缓存击穿问题
 //        Shop shop = cacheClient.queryWithLogicalExpire(CACHE_SHOP_KEY, id, Shop.class, CACHE_SHOP_TTL, TimeUnit.MINUTES, this::getById);
         if (shop == null){
