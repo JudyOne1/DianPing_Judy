@@ -47,6 +47,8 @@ public class VoucherOrderServiceImpl extends ServiceImpl<VoucherOrderMapper, Vou
     @Resource
     private RedissonClient redissonClient;
 
+    private IVoucherOrderService proxy;
+
     public static final DefaultRedisScript<Long> SECKILL_SCRIPT ;
     static {
         SECKILL_SCRIPT = new DefaultRedisScript<>();
@@ -69,44 +71,19 @@ public class VoucherOrderServiceImpl extends ServiceImpl<VoucherOrderMapper, Vou
         public void run() {
             while (true){
                 try {
-                    //获取队列中信息
+                    //2. 获取队列中信息
                     VoucherOrder voucherOrder = orderTasks.take();
                     //创建订单
                     handleVoucherOrder(voucherOrder);
                 } catch (InterruptedException e) {
                     log.error("处理订单异常",e);
-                }finally {
-
                 }
             }
         }
     }
 
     /**
-     * 订单创建
-     *
-     * @param voucherOrder
-     */
-    private void handleVoucherOrder(VoucherOrder voucherOrder) {
-        Long userId = voucherOrder.getUserId();
-        RLock lock = redissonClient.getLock("lock:order:" + userId);
-        boolean isLock = lock.tryLock();//默认，失败不等待，30s超时
-        if (!isLock){
-            //失败
-            log.error("一人一单");
-            return;
-        }
-        try {
-            proxy.creatVoucherOrder(voucherOrder);
-        } catch (IllegalStateException e) {
-            e.printStackTrace();
-        } finally {
-            lock.unlock();
-        }
-    }
-    private IVoucherOrderService proxy;
-
-    /**
+     * 1. 网页入口 => 先执行此方法
      * 基于redis实现秒杀资格判断
      * @param voucherId
      * @return
@@ -136,6 +113,57 @@ public class VoucherOrderServiceImpl extends ServiceImpl<VoucherOrderMapper, Vou
         proxy = (IVoucherOrderService) AopContext.currentProxy();
         return Result.ok(orderId);
     }
+
+    /**
+     * 3. 订单处理
+     * @param voucherOrder
+     */
+    private void handleVoucherOrder(VoucherOrder voucherOrder) {
+        Long userId = voucherOrder.getUserId();
+        RLock lock = redissonClient.getLock("lock:order:" + userId);
+        boolean isLock = lock.tryLock();//redission ： 默认，失败不等待，30s超时
+        if (!isLock){
+            //失败
+            log.error("一人一单");
+            return;
+        }
+        try {
+            //成功 => 订单创建
+            proxy.creatVoucherOrder(voucherOrder);
+        } catch (IllegalStateException e) {
+            e.printStackTrace();
+        } finally {
+            lock.unlock();
+        }
+    }
+
+    /**
+     * 4. 订单创建
+     * @param voucherOrder
+     */
+    @Transactional
+    public void creatVoucherOrder(VoucherOrder voucherOrder){
+        //一人一单 再判断
+        Long userId = voucherOrder.getUserId();
+        int count = query().eq("user_id", userId).eq("voucher_id", voucherOrder.getVoucherId()).count();
+        if (count > 0) {
+            log.error("用户已经购买过一次！");
+            return;
+        }
+        //扣减
+        boolean succes = seckillVoucherService.update()
+                .setSql("stock = stock - 1")
+                .eq("voucher_id", voucherOrder.getVoucherId())
+                .gt("stock",0).update();
+
+        if (!succes) {
+            log.error("库存不足！");
+            return;
+        }
+        //创建订单 => database
+        this.save(voucherOrder);
+    }
+}
 
 //    @Override
 //    public Result seckillVoucher(Long voucherId) {
@@ -191,27 +219,4 @@ public class VoucherOrderServiceImpl extends ServiceImpl<VoucherOrderMapper, Vou
 //        return null;
 //    }
 
-    @Transactional
-    public void creatVoucherOrder(VoucherOrder voucherOrder){
-        //一人一单
-        Long userId = voucherOrder.getUserId();
-        int count = query().eq("user_id", userId).eq("voucher_id", voucherOrder.getVoucherId()).count();
-        if (count > 0) {
-            log.error("用户已经购买过一次！");
-            return;
-        }
-        //扣减
-        boolean succes = seckillVoucherService.update()
-                .setSql("stock = stock - 1")
-                .eq("voucher_id", voucherOrder.getVoucherId())
-                .gt("stock",0).update();
 
-        if (!succes) {
-            log.error("库存不足！");
-            return;
-        }
-        //创建订单
-        this.save(voucherOrder);
-
-    }
-}
