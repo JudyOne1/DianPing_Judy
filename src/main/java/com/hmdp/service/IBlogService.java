@@ -1,5 +1,6 @@
 package com.hmdp.service;
 
+import com.hmdp.dto.Result;
 import com.hmdp.entity.Blog;
 import com.baomidou.mybatisplus.extension.service.IService;
 
@@ -15,7 +16,11 @@ import java.util.List;
  */
 public interface IBlogService extends IService<Blog> {
 
-    List<Blog> queryHotBlog(Integer current);
+    Result queryHotBlog(Integer current);
 
-    Blog queryBlogById(Long id);
+    Result queryBlogById(Long id);
+
+    Result likeBlog(Long id);
+
+    Result TOPLikes(Long id);
 }

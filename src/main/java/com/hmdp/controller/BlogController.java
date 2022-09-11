@@ -32,9 +32,14 @@ public class BlogController {
     @Resource
     private IUserService userService;
 
+    @GetMapping("/likes/{id}")
+    public Result TOPLikes(@PathVariable Long id){
+        return blogService.TOPLikes(id);
+    }
+
     @GetMapping("/{id}")
     public Result queryBlogById(@PathVariable Long id){
-        return Result.ok(blogService.queryBlogById(id));
+        return blogService.queryBlogById(id);
     }
 
     @PostMapping
@@ -50,10 +55,7 @@ public class BlogController {
 
     @PutMapping("/like/{id}")
     public Result likeBlog(@PathVariable("id") Long id) {
-        // 修改点赞数量
-        blogService.update()
-                .setSql("liked = liked + 1").eq("id", id).update();
-        return Result.ok();
+        return blogService.likeBlog(id);
     }
 
     @GetMapping("/of/me")
@@ -70,7 +72,7 @@ public class BlogController {
 
     @GetMapping("/hot")
     public Result queryHotBlog(@RequestParam(value = "current", defaultValue = "1") Integer current) {
-        return Result.ok(blogService.queryHotBlog(current));
+        return blogService.queryHotBlog(current);
         //原始代码 => 封装到service中
 //        Page<Blog> page = blogService.query()
 //                .orderByDesc("liked")
