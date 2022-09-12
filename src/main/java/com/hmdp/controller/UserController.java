@@ -35,6 +35,16 @@ public class UserController {
     @Resource
     private IUserInfoService userInfoService;
 
+    @PostMapping("/sign")
+    public Result sign(){
+        return userService.sign();
+    }
+
+    @GetMapping("/sign/count")
+    public Result signCount(){
+        return userService.signCount();
+    }
+
 // UserController 根据id查询用户
 
     @GetMapping("/{id}")
