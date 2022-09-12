@@ -47,7 +47,6 @@ public class VoucherOrderServiceImpl extends ServiceImpl<VoucherOrderMapper, Vou
     @Resource
     private RedissonClient redissonClient;
 
-
     public static final DefaultRedisScript<Long> SECKILL_SCRIPT ;
     static {
         SECKILL_SCRIPT = new DefaultRedisScript<>();
