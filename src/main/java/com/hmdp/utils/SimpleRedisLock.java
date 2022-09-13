@@ -24,6 +24,7 @@ import java.util.concurrent.TimeUnit;
 public class SimpleRedisLock implements ILock{
 
     private String name;
+
     public static final String KEY_PREFIX = "lock:";
 
     public static final String ID_PREFIX = UUID.randomUUID().toString(true)+"-";

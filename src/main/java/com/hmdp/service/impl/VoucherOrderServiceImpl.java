@@ -3,12 +3,14 @@ package com.hmdp.service.impl;
 import cn.hutool.core.bean.BeanUtil;
 import cn.hutool.core.util.BooleanUtil;
 import com.hmdp.dto.Result;
+import com.hmdp.entity.SeckillVoucher;
 import com.hmdp.entity.VoucherOrder;
 import com.hmdp.mapper.VoucherOrderMapper;
 import com.hmdp.service.ISeckillVoucherService;
 import com.hmdp.service.IVoucherOrderService;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.hmdp.utils.RedisIdWorker;
+import com.hmdp.utils.SimpleRedisLock;
 import com.hmdp.utils.UserHolder;
 import lombok.extern.slf4j.Slf4j;
 import org.redisson.api.RLock;
@@ -25,6 +27,7 @@ import org.springframework.transaction.annotation.Transactional;
 import javax.annotation.PostConstruct;
 import javax.annotation.Resource;
 import java.time.Duration;
+import java.time.LocalDateTime;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
@@ -99,7 +102,6 @@ private class VoucherOrderHander implements Runnable {
                 //2）. 获取消息队列中信息  XREADGROUP GROUP
                 List<MapRecord<String, Object, Object>> list = stringRedisTemplate.opsForStream().read(
                         Consumer.from("g1", "c1"),
-
                         StreamReadOptions.empty().count(1).block(Duration.ofSeconds(2)),
                         StreamOffset.create(queueName, ReadOffset.lastConsumed())//<
                 );
@@ -273,28 +275,28 @@ private class VoucherOrderHander implements Runnable {
 //        }
 //        Long userId = UserHolder.getUser().getId();
 //
-////        synchronized (userId.toString().intern()){
-////            //获取事务代理对象，确保事务生效  是this.的方式调用的，事务想要生效，还得利用代理来生效，所以这个地方，我们需要获得原始的事务对象， 来操作事务
-////            IVoucherOrderService proxy = (IVoucherOrderService) AopContext.currentProxy();
-////            return proxy.creatVoucherOrder(voucherId);
-////        }
-//        //-----------------------------------自定义分布式锁--------------------------------------------
-//        //分布式锁
-////        SimpleRedisLock lock = new SimpleRedisLock("order:" + userId, stringRedisTemplate);
-////        boolean isLock = lock.tryLock(1200);
-////        if (!isLock){
-////            return Result.fail("一人一单");
-////        }
-////        try {
-////            IVoucherOrderService proxy = (IVoucherOrderService) AopContext.currentProxy();
-////            return proxy.creatVoucherOrder(voucherId);
-////        } catch (IllegalStateException e) {
-////            e.printStackTrace();
-////        } finally {
-////            lock.unlock();
-////        }
-////        return null;
-//        //---------------------------------使用redisson分布式锁----------------------------------------
+//        synchronized (userId.toString().intern()){
+//            //获取事务代理对象，确保事务生效  是this.的方式调用的，事务想要生效，还得利用代理来生效，所以这个地方，我们需要获得原始的事务对象， 来操作事务
+//            IVoucherOrderService proxy = (IVoucherOrderService) AopContext.currentProxy();
+//            return proxy.creatVoucherOrder(voucherId);
+//        }
+////        -----------------------------------自定义分布式锁--------------------------------------------
+////        分布式锁
+//        SimpleRedisLock lock = new SimpleRedisLock("order:" + userId, stringRedisTemplate);
+//        boolean isLock = lock.tryLock(1200);
+//        if (!isLock){
+//            return Result.fail("一人一单");
+//        }
+//        try {
+//            IVoucherOrderService proxy = (IVoucherOrderService) AopContext.currentProxy();
+//            return proxy.creatVoucherOrder(voucherId);
+//        } catch (IllegalStateException e) {
+//            e.printStackTrace();
+//        } finally {
+//            lock.unlock();
+//        }
+//        return null;
+////        ---------------------------------使用redisson分布式锁----------------------------------------
 //        RLock lock = redissonClient.getLock("lock:order:" + userId);
 //        boolean isLock = lock.tryLock();//默认，失败不等待，30s超时
 //        if (!isLock){

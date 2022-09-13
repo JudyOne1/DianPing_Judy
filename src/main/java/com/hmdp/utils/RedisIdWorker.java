@@ -17,7 +17,13 @@ import java.time.format.DateTimeFormatter;
 @Component
 public class RedisIdWorker {
 
+    /**
+     * 开始时间戳
+     */
     public static final long BEGIN_TIMESTAMP = 1640995200L;
+    /**
+     * 序列号的位数
+     */
     public static final int COUNT_BITS = 32;
 
     @Resource
@@ -41,9 +47,4 @@ public class RedisIdWorker {
         return timeStamp << COUNT_BITS  | count;
     }
 
-    public static void main(String[] args) {
-        LocalDateTime time = LocalDateTime.of(2022, 1, 1, 0, 0, 0,0 );
-        long second = time.toEpochSecond(ZoneOffset.UTC);
-        System.out.println(second);
-    }
 }

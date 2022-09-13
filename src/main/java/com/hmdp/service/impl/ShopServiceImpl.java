@@ -222,7 +222,6 @@ public class ShopServiceImpl extends ServiceImpl<ShopMapper, Shop> implements IS
     public void saveShop2Redis(Long id,Long expireSeconds) throws InterruptedException {
         //查询
         Shop shop = getById(id);
-        Thread.sleep(200);//模拟
         //封装逻辑过期时间
         RedisData redisData = new RedisData();
         redisData.setData(shop);

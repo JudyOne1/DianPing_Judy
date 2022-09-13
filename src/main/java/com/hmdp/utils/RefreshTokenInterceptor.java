@@ -15,7 +15,6 @@ import static com.hmdp.utils.RedisConstants.LOGIN_USER_KEY;
 import static com.hmdp.utils.RedisConstants.LOGIN_USER_TTL;
 
 /**
- *
  * 先拦截所有=>进行token刷新
  * 放行到loginInterceptor再进行登录拦截
  * @author:Judy
@@ -35,17 +34,22 @@ public class RefreshTokenInterceptor implements HandlerInterceptor {
         //token=>redis=>map=>userDto
         String token = request.getHeader("authorization");
         if (StrUtil.isBlank(token)) {
+            //放行给第二层拦截器
             return true;
         }
         String key = LOGIN_USER_KEY+token;
+        //通过token查询用户信息
         Map<Object, Object> userMap = stringRedisTemplate.opsForHash().entries(key);
         if (userMap.isEmpty()){
+            //放行给第二层拦截器
             return true;
         }
+        //转存用户信息至threadlocal
         UserDTO userDTO = BeanUtil.fillBeanWithMap(userMap, new UserDTO(), false);
         UserHolder.saveUser(userDTO);
         //刷新token有效期    一旦用户操作就会进入拦截器=>刷新有效期，不操作=>过期
         stringRedisTemplate.expire(key,LOGIN_USER_TTL, TimeUnit.SECONDS);
+        //放行给第二层拦截器
         return true;
     }
 
